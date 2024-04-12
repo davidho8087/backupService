@@ -6,7 +6,7 @@ dotenv.config()
 
 import app from './server.js'
 import logger from './lib/logger.js'
-import {scheduleFolderZipAndMove} from './lib/scheduler.js';
+import { setupScheduler } from './lib/scheduler.js';
 import {loadYAMLConfig} from './config.loader.js'
 import {prepareEnvironment} from "./utils.js";
 
@@ -20,16 +20,15 @@ const environment = config.NODE_ENV;
 const host = config.HOST;
 
 // Configure the scheduled task parameters
-const folderToZip = config.PATH_CONFIG.folderToZip;
+const folderToZipPath = config.PATH_CONFIG.folderToZipPath;
 const destinationPath = config.PATH_CONFIG.destinationPath;
-const scheduleTime = config.PATH_CONFIG.scheduledTime;
 const isEnabled = config.PATH_CONFIG.isEnabled;
+const configPath = config.PATH_CONFIG;
 
 try {
-
     if (isEnabled) {
-        await prepareEnvironment(destinationPath, folderToZip);
-        scheduleFolderZipAndMove(folderToZip, destinationPath, scheduleTime);
+        await prepareEnvironment(destinationPath, folderToZipPath);
+        setupScheduler(configPath, folderToZipPath, destinationPath);
     } else {
         logger.info('Scheduled task is disabled');
     }
@@ -41,6 +40,6 @@ try {
     });
 
 } catch (error) {
-    logger.error(`Error starting server: ${error.message}`);
+    logger.error(`Critical error during server startup: ${error.message}`, { error });
     process.exit(1);
 }

@@ -8,9 +8,14 @@ NODE_ENV: dev
 BATCH_SIZE: 500
 HOST: localhost
 
-# PATH
+# PATH_CONFIG section
 PATH_CONFIG:
   isEnabled: true
-  folderToZip: C:\projects\hendricks\experiment\event-traffic-mock-data\backup
+  folderToZipPath: C:\projects\hendricks\experiment\event-traffic-mock-data\backup
   destinationPath: C:\projects\hendricks\experiment\event-traffic-mock-data\archived
-  scheduledTime: 11:57
+
+  # Set either dailyAt or everyXHours or everyXMinutes.
+  dailyAt: null  # Example: Run daily at 13:16.
+  everyXHours: null # Example: Run every 3 hours.
+  everyXMinutes: 1  # Example: Run every 15 minutes
+
