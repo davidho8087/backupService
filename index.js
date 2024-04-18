@@ -19,16 +19,14 @@ const port = config.PORT;
 const environment = config.NODE_ENV;
 const host = config.HOST;
 
-// Configure the scheduled task parameters
-const folderToZipPath = config.PATH_CONFIG.folderToZipPath;
-const destinationPath = config.PATH_CONFIG.destinationPath;
 const isEnabled = config.PATH_CONFIG.isEnabled;
 const configPath = config.PATH_CONFIG;
 
+
 try {
     if (isEnabled) {
-        await prepareEnvironment(destinationPath, folderToZipPath);
-        setupScheduler(configPath, folderToZipPath, destinationPath);
+        await prepareEnvironment(configPath);
+        setupScheduler(configPath);
     } else {
         logger.info('Scheduled task is disabled');
     }

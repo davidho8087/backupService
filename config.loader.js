@@ -6,10 +6,20 @@ import logger from "./lib/logger.js";
 // Validates time in "HH:mm" format.
 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
+const FieldMapSchema = z.object({
+    spacing: z.number(),
+    fields: z.array(z.string())
+});
+
+const FileFieldMapSchema = z.record(FieldMapSchema);
+
 const PathConfigSchema = z.object({
     isEnabled: z.boolean(),
     folderToZipPath: z.string(),
     destinationPath: z.string(),
+    errorFolderPath: z.string(),
+    dbInsertionErrorFolderPath: z.string(),
+    BATCH_SIZE: z.number(),
     dailyAt: z.string().optional().nullable().refine(val => {
         // Validate that the time is in HH:mm format if val is not null
         return val == null || timePattern.test(val);
@@ -28,6 +38,7 @@ const PathConfigSchema = z.object({
     }, {
         message: "everyXMinutes must be between 1 and 59"
     }),
+    FILE_FIELD_MAP: FileFieldMapSchema
 });
 
 const ConfigSchema = z.object({
@@ -36,7 +47,6 @@ const ConfigSchema = z.object({
     HOST: z.string(),
     PORT: z.number(),
     NODE_ENV: z.string(),
-    BATCH_SIZE: z.number(),
     PATH_CONFIG: PathConfigSchema,
 });
 
@@ -47,16 +57,13 @@ export function loadYAMLConfig() {
         const yamlConfig = yaml.load(yamlData);
         return ConfigSchema.parse(yamlConfig);  // Validate config with Zod
     } catch (error) {
+        // Handle specific Zod validation errors
         if (error instanceof z.ZodError) {
-            error.issues.forEach(issue => {
-                console.error(`Validation error - ${issue.path.join('.')} : ${issue.message}`);
-            });
-            // Optionally return a default config or handle the error according to your needs
-            process.exit(1); // or handle more gracefully depending on your application's needs
+            console.error(`Config validation error: ${error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ')}`);
         } else {
-            logger.error(`Error reading ${filePath}:`, error);
-            throw error;  // Rethrow the error if it's not a ZodError
+            // Handle generic errors, e.g., file not found, bad permissions, etc.
+            console.error(`Error reading ${filePath}: ${error.message}`);
         }
+        process.exit(1); // Exit process for critical configuration load failure
     }
 }
-

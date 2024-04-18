@@ -5,17 +5,89 @@ STORE_CODE: AU-MUNRO001
 # Initial
 PORT: 5501
 NODE_ENV: dev
-BATCH_SIZE: 500
 HOST: localhost
 
 # PATH_CONFIG section
 PATH_CONFIG:
   isEnabled: true
-  folderToZipPath: C:\projects\hendricks\experiment\event-traffic-mock-data\backup
-  destinationPath: C:\projects\hendricks\experiment\event-traffic-mock-data\archived
+  folderToZipPath: D:\davidho\tools\event-traffic-mock-data\backup
+  destinationPath: D:\davidho\tools\event-traffic-mock-data\archived
+  errorFolderPath: D:\davidho\tools\event-traffic-mock-data\error
+  dbInsertionErrorFolderPath: D:\davidho\tools\event-traffic-mock-data\dbInsertionErrorFolderPath
 
   # Set either dailyAt or everyXHours or everyXMinutes.
   dailyAt: null  # Example: Run daily at 13:16.
   everyXHours: null # Example: Run every 3 hours.
   everyXMinutes: 1  # Example: Run every 15 minutes
+  BATCH_SIZE: 10
+  FILE_FIELD_MAP:
+    capacity:
+      spacing: 3
+      fields:
+        - date_time
+        - store_code
+        - detection_id
+        - tracker_id
+        - event_type
+        - event_name
+        - region
+        - class_type
+        - camera_name
+        - count
+        - message
+        - region_id
+        - zone_name
+    dwell:
+      spacing: 3
+      fields:
+        - date_time
+        - store_code
+        - detection_id
+        - tracker_id
+        - event_name
+        - event_type
+        - duration
+        - class_type
+        - camera_name
+        - region
+        - message
+        - region_id
+        - zone_name
 
+# DB SCHEMA MAPPING
+DB_SCHEMA:
+  name: Detection
+  fields:
+    - name: id
+      type: Int
+      isId: true
+    - name: detection_id
+      type: String
+    - name: tracker_id
+      type: String
+    - name: store_code
+      type: String
+    - name: event_type
+      type: String
+    - name: event_name
+      type: String
+    - name: duration
+      type: Float
+      default: "0"
+    - name: count
+      type: Int
+      default: "0"
+    - name: class_type
+      type: String
+    - name: message
+      type: String
+    - name: date_time
+      type: DateTime
+    - name: camera_name
+      type: String
+    - name: region
+      type: String
+    - name: region_id
+      type: String
+    - name: zone_name
+      type: String

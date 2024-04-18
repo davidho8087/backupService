@@ -6,14 +6,22 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "generate:schema": "node generateModel.js",
+    "step:2": "npx prisma migrate dev --name init",
+    "reset:schema": "npx prisma migrate reset",
+    "update:schema": "npx prisma migrate dev",
+    "studio": "npx prisma studio"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^5.12.1",
     "archiver": "^7.0.1",
+    "async": "^3.2.5",
     "cors": "^2.8.5",
+    "csv-parse": "^5.5.5",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -22,6 +30,8 @@
     "morgan": "^1.10.0",
     "node-schedule": "^2.1.1",
     "nodemon": "^3.1.0",
+    "prisma": "^5.12.1",
+    "sqlite": "^5.1.1",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.22.4"
