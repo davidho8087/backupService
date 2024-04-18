@@ -50,6 +50,22 @@ const ConfigSchema = z.object({
     PATH_CONFIG: PathConfigSchema,
 });
 
+
+/**
+ * Loads and validates configuration settings from a YAML file.
+ *
+ * This function reads configuration data from a YAML file located at a predefined path (`./config.yaml`).
+ * It uses the `fs` module to synchronously read the file and the `yaml` library to parse the content.
+ * After parsing, the configuration is validated against a schema defined with Zod to ensure it meets
+ * all required constraints and types. If the YAML content is valid according to the schema, the validated
+ * configuration object is returned. If the YAML file contains validation errors, these are logged and
+ * the process exits. If other reading errors occur (like file not found or bad permissions), these are also
+ * logged, and the process exits.
+ *
+ * @returns {Object} The validated configuration object parsed from the YAML file.
+ * @throws {z.ZodError} Throws a ZodError if the YAML content does not meet the schema requirements.
+ * @throws {Error} Throws an Error for file reading issues such as "file not found" or "bad permissions".
+ */
 export function loadYAMLConfig() {
     const filePath = './config.yaml';
     try {
