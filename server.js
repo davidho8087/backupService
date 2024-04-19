@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 
 
 // Updated error handling middleware
-app.use((err, req, res, next) => {  // Added 'next' parameter
+app.use((err, req, res, next) => {
     logger.error(err);
     res.status(500).json({ message: `An error occurred: ${err.message}` });
 });
