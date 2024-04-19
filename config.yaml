@@ -10,10 +10,11 @@ HOST: localhost
 # PATH_CONFIG section
 PATH_CONFIG:
   isEnabled: true
-  folderToZipPath: D:\davidho\tools\event-traffic-mock-data\backup
-  destinationPath: D:\davidho\tools\event-traffic-mock-data\archived
-  errorFolderPath: D:\davidho\tools\event-traffic-mock-data\error
-  dbInsertionErrorFolderPath: D:\davidho\tools\event-traffic-mock-data\dbInsertionErrorFolderPath
+  sourceZipDirectory: D:\davidho\tools\event-traffic-mock-data\backup
+  destinationZipDirectory: D:\davidho\tools\event-traffic-mock-data\archived
+  miscErrorDirectory: D:\davidho\tools\event-traffic-mock-data\error
+  dbInsertionErrorDirectory: D:\davidho\tools\event-traffic-mock-data\dbInsertionError
+  fieldConfigErrorDirectory: D:\davidho\tools\event-traffic-mock-data\fieldConfigError
 
   # Set either dailyAt or everyXHours or everyXMinutes.
   dailyAt: null  # Example: Run daily at 13:16.
@@ -22,7 +23,7 @@ PATH_CONFIG:
   BATCH_SIZE: 10
   FILE_FIELD_MAP:
     capacity:
-      spacing: 3
+      spacing: 4
       fields:
         - date_time
         - store_code

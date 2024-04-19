@@ -15,10 +15,11 @@ const FileFieldMapSchema = z.record(FieldMapSchema);
 
 const PathConfigSchema = z.object({
     isEnabled: z.boolean(),
-    folderToZipPath: z.string(),
-    destinationPath: z.string(),
-    errorFolderPath: z.string(),
-    dbInsertionErrorFolderPath: z.string(),
+    sourceZipDirectory: z.string(),
+    destinationZipDirectory: z.string(),
+    miscErrorDirectory: z.string(),
+    dbInsertionErrorDirectory: z.string(),
+    fieldConfigErrorDirectory: z.string(),
     BATCH_SIZE: z.number(),
     dailyAt: z.string().optional().nullable().refine(val => {
         // Validate that the time is in HH:mm format if val is not null

@@ -10,7 +10,8 @@ import async from 'async';
  * it will be created.
  *
  * @async
- * @param {string} path The path to the directory to check or create.
+ * @param {string} path - The path to the directory to check or create.
+ * @throws {Error} Will throw an error if there is an issue ensuring directory existence.
  * @returns {Promise<void>} A promise that resolves when the operation is complete.
  */
 export async function ensureDirectoryExists(path) {
@@ -57,19 +58,22 @@ export async function moveZipFile(sourcePath, destinationPath) {
  *
  * @async
  * @param {Object} configPath - An object containing paths that need to be verified and potentially created.
- * @param {string} configPath.folderToZipPath - The path to the directory where files will be zipped.
- * @param {string} configPath.destinationPath - The path to the directory where zipped files will be moved.
- * @param {string} configPath.errorFolderPath - The path to the directory where erroneous files or logs will be stored.
+ * @param {string} configPath.sourceZipDirectory - The path to the directory where files will be zipped.
+ * @param {string} configPath.destinationZipDirectory - The path to the directory where zipped files will be moved.
+ * @param {string} configPath.miscErrorDirectory - The path to the directory where miscellaneous errors or logs will be stored.
+ * @param {string} configPath.dbInsertionErrorDirectory - The path to the directory where database insertion errors or logs will be stored.
+ * @param {string} configPath.fieldConfigErrorDirectory - The path to the directory where field configuration errors or logs will be stored.
  * @throws {Error} - Throws an error if there is an issue creating the directories.
  */
 export async function prepareEnvironment(configPath) {
-    const {folderToZipPath, destinationPath, errorFolderPath, dbInsertionErrorFolderPath} = configPath;
+    const {sourceZipDirectory, destinationZipDirectory, miscErrorDirectory, dbInsertionErrorDirectory, fieldConfigErrorDirectory} = configPath;
     try {
-        logger.info('Verify folder existence');
-        await ensureDirectoryExists(folderToZipPath);
-        await ensureDirectoryExists(destinationPath);
-        await ensureDirectoryExists(errorFolderPath);
-        await ensureDirectoryExists(dbInsertionErrorFolderPath);
+        logger.info('Verify directory existence');
+        await ensureDirectoryExists(sourceZipDirectory);
+        await ensureDirectoryExists(destinationZipDirectory);
+        await ensureDirectoryExists(miscErrorDirectory);
+        await ensureDirectoryExists(dbInsertionErrorDirectory);
+        await ensureDirectoryExists(fieldConfigErrorDirectory);
     } catch (error) {
         logger.error('Error preparing the environment:', error);
         throw error;
@@ -104,6 +108,7 @@ export function validateSchedulingConfig(config) {
  *
  * @async
  * @param {string} directoryPath - The path to the directory to empty.
+ * @throws {Error} - Throws an error if there is an issue emptying the directory.
  */
 export async function emptyDirectory(directoryPath) {
     try {
@@ -120,18 +125,18 @@ export async function emptyDirectory(directoryPath) {
  * Checks asynchronously if a directory is not empty.
  *
  * This function reads the contents of a specified directory and returns a promise that resolves
- * to `true` if the directory contains one or more files or folders, or `false` if it is empty.
+ * to `true` if the directory contains one or more files or directory, or `false` if it is empty.
  * If an error occurs during reading the directory (e.g., the directory does not exist), the promise
  * rejects with an error.
  *
  * @async
- * @param {string} dirPath - The path to the directory to check.
+ * @param {string} directoryPath - The path to the directory to check.
  * @returns {Promise<boolean>} A promise that resolves to `true` if the directory is not empty,
  *                             otherwise `false`.
  */
-export async function isDirectoryNotEmpty(dirPath) {
+export async function isDirectoryNotEmpty(directoryPath) {
     return new Promise((resolve, reject) => {
-        fs.readdir(dirPath, (err, files) => {
+        fs.readdir(directoryPath, (err, files) => {
             if (err) {
                 reject(err);
             } else {
@@ -169,16 +174,16 @@ function determineFieldMapping(filename, config) {
 /**
  * Adds an error file's paths to a queue for processing.
  *
- * This function extracts the filename from the provided file path, combines it with the folder path to
+ * This function extracts the filename from the provided file path, combines it with the directory path to
  * form a new target path, and adds both the original file path and the new target path to the error queue.
  *
  * @param {Array} errorQueue - The queue where error file paths are stored for processing.
  * @param {string} filePath - The full path of the file that encountered an error.
- * @param {string} folderPath - The target folder path where the error file should be relocated.
+ * @param {string} directoryPath - The target directory path where the error file should be relocated.
  */
-function queueErrorFile(errorQueue, filePath, folderPath) {
+function queueErrorFile(errorQueue, filePath, directoryPath) {
     const fileName = path.basename(filePath);
-    const targetPath = path.join(folderPath, fileName);
+    const targetPath = path.join(directoryPath, fileName);
     errorQueue.push({sourcePath: filePath, targetPath});
 }
 
@@ -233,9 +238,9 @@ function validateData(dataObject, requiredFields) {
 
 
 /**
- * Processes files within a specified folder according to configuration settings.
+ * Processes files within a specified directory according to configuration settings.
  *
- * This function reads files from a specified directory (`folderToZipPath` from the config),
+ * This function reads files from a specified directory (`sourceZipDirectory` from the config),
  * and processes each file according to field mappings defined in the config. It validates,
  * parses, and inserts each file's data into a database. Files with errors in parsing, validation,
  * or database insertion are moved to specific error directories. The function manages file
@@ -254,7 +259,7 @@ function validateData(dataObject, requiredFields) {
 
 export async function processFiles(config) {
     try {
-        const {BATCH_SIZE, errorFolderPath, dbInsertionErrorFolderPath, folderToZipPath} = config;
+        const {BATCH_SIZE, miscErrorDirectory, dbInsertionErrorDirectory, sourceZipDirectory, fieldConfigErrorDirectory} = config;
 
         // Configuration for error handling
         const errorQueue = async.queue(async (task, callback) => {
@@ -262,14 +267,14 @@ export async function processFiles(config) {
                 await fs.move(task.sourcePath, task.targetPath);
                 logger.info(`Successfully moved erroneous file to: ${task.targetPath}`);
             } catch (error) {
-                logger.error(`Failed to move erroneous file: ${task.sourcePath} to ${task.targetPath}. Error: ${error.message}`);            } finally {
+                logger.error(`Failed to move erroneous file: ${task.sourcePath} to ${task.targetPath}. Error: ${error.message}`);
+            } finally {
                 callback();
             }
         }, BATCH_SIZE); // Limited concurrency for error processing
 
 
-
-        const files = await fs.promises.readdir(folderToZipPath);
+        const files = await fs.promises.readdir(sourceZipDirectory);
 
         if (!files.length) {
             logger.info('No files found to process. Exiting.');
@@ -279,11 +284,12 @@ export async function processFiles(config) {
 
         const tasks = files.map(file => {
             return async () => { // Make sure to return a function for async.parallelLimit
-                const filePath = path.join(folderToZipPath, file);
+                const filePath = path.join(sourceZipDirectory, file);
                 const matchedMappedFields = determineFieldMapping(file, config);
 
                 if (!matchedMappedFields) {
                     logger.warn(`No field configuration found for file: ${file}. Skipping file.`);
+                    queueErrorFile(errorQueue, filePath, fieldConfigErrorDirectory);
                     return; // Skip processing this file
                 }
 
@@ -296,7 +302,7 @@ export async function processFiles(config) {
 
                 parser.on('error', error => {
                     logger.error(`Parsing error in file ${file}: ${error.message}. Terminating parser.`);
-                    queueErrorFile(errorQueue, filePath, errorFolderPath);
+                    queueErrorFile(errorQueue, filePath, miscErrorDirectory);
                     parser.destroy();
                 });
 
@@ -310,7 +316,7 @@ export async function processFiles(config) {
                         } catch (error) {
                             // Log the error if constructing the data object fails
                             logger.error(`Error constructing data object for file ${file}: ${error.message}`);
-                            queueErrorFile(errorQueue, filePath, errorFolderPath);
+                            queueErrorFile(errorQueue, filePath, miscErrorDirectory);
                             continue; // Skip this record and continue with the next one
                         }
 
@@ -319,7 +325,7 @@ export async function processFiles(config) {
                         if (errors) {
                             // Log validation errors and queue the file for error processing
                             logger.warn(`Validation errors in file ${file}: ${errors.join(', ')}. Skipping row.`);
-                            queueErrorFile(errorQueue, filePath, errorFolderPath);
+                            queueErrorFile(errorQueue, filePath, miscErrorDirectory);
                             continue; // Skip this record and continue with the next one
                         }
 
@@ -329,7 +335,7 @@ export async function processFiles(config) {
                             logger.info(`Successfully inserted data for file ${file}.`);
                         } catch (error) {
                             logger.error(`Database insertion error for file ${file}: ${error.message}. Data: ${JSON.stringify(dataObject)}`);
-                            queueErrorFile(errorQueue, filePath, dbInsertionErrorFolderPath);
+                            queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
                         }
                     }
                     logger.info(`Completed processing the file: ${file}`);
