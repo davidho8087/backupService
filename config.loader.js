@@ -81,10 +81,10 @@ export function loadYAMLConfig() {
     } catch (error) {
         // Handle specific Zod validation errors
         if (error instanceof z.ZodError) {
-            console.error(`Config validation error: ${error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ')}`);
+            logger.error(`Config validation error: ${error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ')}`);
         } else {
             // Handle generic errors, e.g., file not found, bad permissions, etc.
-            console.error(`Error reading ${filePath}: ${error.message}`);
+            logger.error(`Error reading ${filePath}: ${error.message}`);
         }
         process.exit(1); // Exit process for critical configuration load failure
     }
