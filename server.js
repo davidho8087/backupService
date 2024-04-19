@@ -23,9 +23,9 @@ app.get('/', (req, res) => {
 
 
 // Updated error handling middleware
-app.use((err, req, res) => {
-    logger.error(err)
-    res.status(500).json({ message: `An error occurred: ${err.message}` })
-})
+app.use((err, req, res, next) => {  // Added 'next' parameter
+    logger.error(err);
+    res.status(500).json({ message: `An error occurred: ${err.message}` });
+});
 
 export default app
