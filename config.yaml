@@ -9,18 +9,26 @@ HOST: localhost
 
 # PATH_CONFIG section
 PATH_CONFIG:
-  isEnabled: true
+  isEnabled: true # Set to true to enable the application operations
   sourceZipDirectory: D:\davidho\tools\event-traffic-mock-data\backup
   destinationZipDirectory: D:\davidho\tools\event-traffic-mock-data\archived
   miscErrorDirectory: D:\davidho\tools\event-traffic-mock-data\error
   dbInsertionErrorDirectory: D:\davidho\tools\event-traffic-mock-data\dbInsertionError
   fieldConfigErrorDirectory: D:\davidho\tools\event-traffic-mock-data\fieldConfigError
 
+  # Option to execute the following tasks
+  runProcessFiles: true
+  runZipAndMove: true
+  runEmptyTheDirectory: true
+
   # Set either dailyAt or everyXHours or everyXMinutes.
   dailyAt: null  # Example: Run daily at 13:16.
   everyXHours: null # Example: Run every 3 hours.
   everyXMinutes: 1  # Example: Run every 15 minutes
   BATCH_SIZE: 10
+
+  # runProcessFiles must be set to true to run the following tasks
+  # FILE_FIELD_MAP
   FILE_FIELD_MAP:
     capacity:
       spacing: 4
@@ -55,6 +63,7 @@ PATH_CONFIG:
         - region_id
         - zone_name
 
+# runProcessFiles must be set to true to run the following tasks
 # DB SCHEMA MAPPING
 DB_SCHEMA:
   name: Detection

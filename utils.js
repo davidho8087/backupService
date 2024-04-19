@@ -110,7 +110,7 @@ export function validateSchedulingConfig(config) {
  * @param {string} directoryPath - The path to the directory to empty.
  * @throws {Error} - Throws an error if there is an issue emptying the directory.
  */
-export async function emptyDirectory(directoryPath) {
+export async function emptyTheDirectory(directoryPath) {
     try {
         await fs.emptyDir(directoryPath);
         logger.info(`All files in ${directoryPath} have been successfully deleted.`);
@@ -170,24 +170,6 @@ function determineFieldMapping(filename, config) {
     return null; // No matching configuration found
 }
 
-
-/**
- * Adds an error file's paths to a queue for processing.
- *
- * This function extracts the filename from the provided file path, combines it with the directory path to
- * form a new target path, and adds both the original file path and the new target path to the error queue.
- *
- * @param {Array} errorQueue - The queue where error file paths are stored for processing.
- * @param {string} filePath - The full path of the file that encountered an error.
- * @param {string} directoryPath - The target directory path where the error file should be relocated.
- */
-function queueErrorFile(errorQueue, filePath, directoryPath) {
-    const fileName = path.basename(filePath);
-    const targetPath = path.join(directoryPath, fileName);
-    errorQueue.push({sourcePath: filePath, targetPath});
-}
-
-
 /**
  * Constructs a data object from specified fields and a content column.
  *
@@ -234,6 +216,22 @@ function validateData(dataObject, requiredFields) {
         }
     });
     return errors.length > 0 ? errors : null;
+}
+
+/**
+ * Adds an error file's paths to a queue for processing.
+ *
+ * This function extracts the filename from the provided file path, combines it with the directory path to
+ * form a new target path, and adds both the original file path and the new target path to the error queue.
+ *
+ * @param {Array} errorQueue - The queue where error file paths are stored for processing.
+ * @param {string} filePath - The full path of the file that encountered an error.
+ * @param {string} directoryPath - The target directory path where the error file should be relocated.
+ */
+function queueErrorFile(errorQueue, filePath, directoryPath) {
+    const fileName = path.basename(filePath);
+    const targetPath = path.join(directoryPath, fileName);
+    errorQueue.push({sourcePath: filePath, targetPath});
 }
 
 

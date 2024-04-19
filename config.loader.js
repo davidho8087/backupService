@@ -14,13 +14,18 @@ const FieldMapSchema = z.object({
 const FileFieldMapSchema = z.record(FieldMapSchema);
 
 const PathConfigSchema = z.object({
-    isEnabled: z.boolean(),
+    isEnabled: z.boolean().default(false),
     sourceZipDirectory: z.string(),
     destinationZipDirectory: z.string(),
     miscErrorDirectory: z.string(),
     dbInsertionErrorDirectory: z.string(),
     fieldConfigErrorDirectory: z.string(),
-    BATCH_SIZE: z.number(),
+    runProcessFiles: z.boolean().default(false),
+    runZipAndMove: z.boolean().default(false),
+    runEmptyTheDirectory: z.boolean().default(false),
+
+    BATCH_SIZE: z.number().default(100),
+
     dailyAt: z.string().optional().nullable().refine(val => {
         // Validate that the time is in HH:mm format if val is not null
         return val == null || timePattern.test(val);
