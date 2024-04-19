@@ -7,19 +7,37 @@ PORT: 5501
 NODE_ENV: dev
 HOST: localhost
 
+
+#EXECUTION_TASKS:
+#  runProcessFiles: true
+#  tasks:
+#    - processFiles
+#    - appendToFile
+#    - moveToArchive
+#  runZipAndMove: true
+#  runEmptyTheDirectory: true
+  # Or alternatively for another valid configuration:
+  # - saveToDatabase
+  # - moveToArchive
+  # - runZipAndMove
+
+
 # PATH_CONFIG section
 PATH_CONFIG:
   isEnabled: true # Set to true to enable the application operations
-  sourceZipDirectory: D:\davidho\tools\event-traffic-mock-data\backup
-  destinationZipDirectory: D:\davidho\tools\event-traffic-mock-data\archived
-  miscErrorDirectory: D:\davidho\tools\event-traffic-mock-data\error
-  dbInsertionErrorDirectory: D:\davidho\tools\event-traffic-mock-data\dbInsertionError
-  fieldConfigErrorDirectory: D:\davidho\tools\event-traffic-mock-data\fieldConfigError
+  sourceZipDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\backup
+  destinationZipDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\zippedArchive
+  miscErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\miscError
+  dbInsertionErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\dbInsertionError
+  fieldConfigErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\fieldConfigError
+#  appendToFile: D:\davidho\tools\event-traffic-mock-data\appendToFile
 
   # Option to execute the following tasks
   runProcessFiles: true
   runZipAndMove: true
   runEmptyTheDirectory: true
+#  runZipAndMove: true
+#  runEmptyTheDirectory: true
 
   # Set either dailyAt or everyXHours or everyXMinutes.
   dailyAt: null  # Example: Run daily at 13:16.

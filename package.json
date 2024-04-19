@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,7 +12,18 @@
     "step:2": "npx prisma migrate dev --name init",
     "reset:schema": "npx prisma migrate reset",
     "update:schema": "npx prisma migrate dev",
-    "studio": "npx prisma studio"
+    "studio": "npx prisma studio",
+    "build": "pkg . --targets node16-win-x64 --output ./build/backup-service.exe"
+  },
+  "pkg": {
+    "targets": [
+      "node16-win-x64"
+    ],
+    "assets": [
+      "node_modules/@prisma/client/**/*",
+      "node_modules/.prisma/client/*"
+    ],
+    "outputPath": "build"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +42,7 @@
     "morgan": "^1.10.0",
     "node-schedule": "^2.1.1",
     "nodemon": "^3.1.0",
+    "pkg": "^5.8.1",
     "prisma": "^5.12.1",
     "sqlite": "^5.1.1",
     "winston": "^3.13.0",
