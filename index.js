@@ -1,13 +1,12 @@
 const dotenv = require('dotenv');
-
 dotenv.config();
 
 const app = require('./server.js');
-const logger = require('./lib/logger.js');
-const { setupScheduler } = require('./lib/scheduler.js');
 const { loadYAMLConfig } = require('./config.loader.js');
-const { prepareEnvironment } = require('./utils.js');
-const { testPrismaConnection } = require("./utils");
+const logger = require('./lib/logger.js');
+const { scheduler } = require('./lib/scheduler.js');
+const { testPrismaConnection, prepareDirectory } = require("./utils/preparatory");
+
 
 // Load YAML config
 const config = loadYAMLConfig();
@@ -25,8 +24,8 @@ const configPath = config.PATH_CONFIG;
   try {
     if (isEnabled) {
       await testPrismaConnection();
-      await prepareEnvironment(configPath);
-      setupScheduler(configPath);
+      await prepareDirectory(configPath);
+      scheduler(configPath);
     } else {
       logger.info('Scheduled task is disabled');
     }
