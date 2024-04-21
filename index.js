@@ -1,14 +1,13 @@
-// index.js
+const dotenv = require('dotenv');
 
-import * as dotenv from 'dotenv'
+dotenv.config();
 
-dotenv.config()
-
-import app from './server.js'
-import logger from './lib/logger.js'
-import { setupScheduler } from './lib/scheduler.js';
-import {loadYAMLConfig} from './config.loader.js'
-import {prepareEnvironment} from "./utils.js";
+const app = require('./server.js');
+const logger = require('./lib/logger.js');
+const { setupScheduler } = require('./lib/scheduler.js');
+const { loadYAMLConfig } = require('./config.loader.js');
+const { prepareEnvironment } = require('./utils.js');
+const { testPrismaConnection } = require("./utils");
 
 // Load YAML config
 const config = loadYAMLConfig();
@@ -22,22 +21,25 @@ const host = config.HOST;
 const isEnabled = config.PATH_CONFIG.isEnabled;
 const configPath = config.PATH_CONFIG;
 
-
-try {
+(async function () {
+  try {
     if (isEnabled) {
-        await prepareEnvironment(configPath);
-        setupScheduler(configPath);
+      await testPrismaConnection();
+      await prepareEnvironment(configPath);
+      setupScheduler(configPath);
     } else {
-        logger.info('Scheduled task is disabled');
+      logger.info('Scheduled task is disabled');
     }
 
-    app.listen(5003, () => {
-        logger.info(`Server is running on port ${port}`);
-        logger.info(`Server is running in ${environment} mode`);
-        logger.info(`http://${host}:${port}`);
+    app.listen(5003, function () {
+      logger.info(`Server is running on port ${port}`);
+      logger.info(`Server is running in ${environment} mode`);
+      logger.info(`http://${host}:${port}`);
     });
-
-} catch (error) {
-    logger.error(`Critical error during server startup: ${error.message}`, { error });
+  } catch (error) {
+    logger.error(`Critical error during server startup: ${error.message}`, {
+      error,
+    });
     process.exit(1);
-}
+  }
+})();

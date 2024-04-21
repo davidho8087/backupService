@@ -30,6 +30,7 @@ PATH_CONFIG:
   miscErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\miscError
   dbInsertionErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\dbInsertionError
   fieldConfigErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\fieldConfigError
+  winstonLogDirectory: ../logs/backup-service
 #  appendToFile: D:\davidho\tools\event-traffic-mock-data\appendToFile
 
   # Option to execute the following tasks
@@ -50,6 +51,7 @@ PATH_CONFIG:
   FILE_FIELD_MAP:
     capacity:
       spacing: 4
+      validate: 12
       fields:
         - date_time
         - store_code
@@ -66,6 +68,7 @@ PATH_CONFIG:
         - zone_name
     dwell:
       spacing: 3
+      validate: 12
       fields:
         - date_time
         - store_code
@@ -119,3 +122,6 @@ DB_SCHEMA:
       type: String
     - name: zone_name
       type: String
+    - name: file_name
+      type: String
+      nullable: true

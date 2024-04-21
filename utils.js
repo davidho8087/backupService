@@ -1,37 +1,49 @@
-import fs from 'fs-extra';
-import {parse} from 'csv-parse';
-import logger from "./lib/logger.js";
-import prisma from "./lib/prismaClient.js";
-import path from "path";
-import async from 'async';
+const fs = require('fs-extra');
+const parse = require('csv-parse').parse;
+const logger = require('./lib/logger.js');
+const prisma = require('./lib/prismaClient.js');
+const path = require('path');
+const async = require('async');
+
+
+async function testPrismaConnection() {
+  try {
+    const detections = await prisma.detection.findMany({
+      take: 1 // Limits the query to 5 items for testing
+    });
+    logger.info(`Prisma connection test passed. Found ${detections.length} detections limit with 1 record.`);
+  } catch (error) {
+    logger.error('Prisma connection test failed', { error });
+    throw error; // Rethrow to handle the error outside
+  }
+}
 
 /**
  * Ensures that the specified directory exists. If the directory does not exist,
  * it will be created.
  *
  * @async
- * @param {string} path - The path to the directory to check or create.
+ * @param {string} directoryPath - The path to the directory to check or create.
  * @throws {Error} Will throw an error if there is an issue ensuring directory existence.
  * @returns {Promise<void>} A promise that resolves when the operation is complete.
  */
-export async function ensureDirectoryExists(path) {
-    try {
-        // Check if the directory exists
-        const exists = await fs.pathExists(path);
-
-        if (!exists) {
-            // Create the directory if it does not exist
-            await fs.ensureDir(path);
-            logger.info(`Directory created: ${path}`);
-        } else {
-            logger.info(`Verify Directory: ${path}, CHECKED!`);
-        }
-    } catch (error) {
-        logger.error(`Error ensuring directory exists: ${path}`, error);
-        throw error;
-    }
+async function ensureDirectoryExists(directoryPath) {
+  return fs
+    .pathExists(directoryPath)
+    .then((exists) => {
+      if (!exists) {
+        return fs
+          .ensureDir(directoryPath)
+          .then(() => logger.info(`Directory created: ${directoryPath}`));
+      } else {
+        logger.info(`Verify Directory: ${directoryPath}, CHECKED!`);
+      }
+    })
+    .catch((error) => {
+      logger.error(`Error ensuring directory exists: ${directoryPath}`, error);
+      throw error;
+    });
 }
-
 /**
  * Asynchronously moves a zip file from one location to another.
  *
@@ -41,14 +53,14 @@ export async function ensureDirectoryExists(path) {
  * @throws Will throw an error if the file cannot be moved.
  * @returns {Promise<void>} A Promise that resolves when the zip file has been moved.
  */
-export async function moveZipFile(sourcePath, destinationPath) {
-    try {
-        await fs.move(sourcePath, destinationPath);
-        logger.info(`Zip file moved to: ${destinationPath}`);
-    } catch (error) {
-        logger.error('Error moving zip file:', error);
-        throw error;
-    }
+async function moveZipFile(sourcePath, destinationPath) {
+  return fs
+    .move(sourcePath, destinationPath)
+    .then(() => logger.info(`Zip file moved to: ${destinationPath}`))
+    .catch((error) => {
+      logger.error('Error moving zip file:', error);
+      throw error;
+    });
 }
 
 /**
@@ -65,41 +77,43 @@ export async function moveZipFile(sourcePath, destinationPath) {
  * @param {string} configPath.fieldConfigErrorDirectory - The path to the directory where field configuration errors or logs will be stored.
  * @throws {Error} - Throws an error if there is an issue creating the directories.
  */
-export async function prepareEnvironment(configPath) {
-    const {sourceZipDirectory, destinationZipDirectory, miscErrorDirectory, dbInsertionErrorDirectory, fieldConfigErrorDirectory} = configPath;
-    try {
-        logger.info('Verify directory existence');
-        await ensureDirectoryExists(sourceZipDirectory);
-        await ensureDirectoryExists(destinationZipDirectory);
-        await ensureDirectoryExists(miscErrorDirectory);
-        await ensureDirectoryExists(dbInsertionErrorDirectory);
-        await ensureDirectoryExists(fieldConfigErrorDirectory);
-    } catch (error) {
-        logger.error('Error preparing the environment:', error);
-        throw error;
-    }
+async function prepareEnvironment(configPath) {
+  const {
+    sourceZipDirectory,
+    destinationZipDirectory,
+    miscErrorDirectory,
+    dbInsertionErrorDirectory,
+    fieldConfigErrorDirectory,
+  } = configPath;
+  return Promise.all([
+    ensureDirectoryExists(sourceZipDirectory),
+    ensureDirectoryExists(destinationZipDirectory),
+    ensureDirectoryExists(miscErrorDirectory),
+    ensureDirectoryExists(dbInsertionErrorDirectory),
+    ensureDirectoryExists(fieldConfigErrorDirectory),
+  ]).catch((error) => {
+    logger.error('Error preparing the environment:', error);
+    throw error;
+  });
 }
-
 /**
  * Validates the scheduling configuration to ensure exactly one scheduling option is set.
  * Throws an error if zero or more than one scheduling option is set.
  *
- * @async
  * @param {Object} config - The scheduling configuration object.
  * @throws {Error} If zero or more than one scheduling option is set.
  */
-export function validateSchedulingConfig(config) {
-    const {dailyAt, everyXHours, everyXMinutes} = config;
-
-    // Count how many scheduling options are set
-    const optionsSet = [dailyAt, everyXHours, everyXMinutes].filter(item => item != null).length;
-
-    // Check if exactly one scheduling option is set
-    if (optionsSet !== 1) {
-        throw new Error("Invalid scheduling configuration: exactly one of 'dailyAt', 'everyXHours', or 'everyXMinutes' shall be set.");
-    }
-
-    logger.info("Scheduling configuration is valid.");
+function validateSchedulingConfig(config) {
+  const { dailyAt, everyXHours, everyXMinutes } = config;
+  const optionsSet = [dailyAt, everyXHours, everyXMinutes].filter(
+    (item) => item != null
+  ).length;
+  if (optionsSet !== 1) {
+    throw new Error(
+      "Invalid scheduling configuration: exactly one of 'dailyAt', 'everyXHours', or 'everyXMinutes' must be set."
+    );
+  }
+  logger.info('Scheduling configuration is valid.');
 }
 
 /**
@@ -110,16 +124,22 @@ export function validateSchedulingConfig(config) {
  * @param {string} directoryPath - The path to the directory to empty.
  * @throws {Error} - Throws an error if there is an issue emptying the directory.
  */
-export async function emptyTheDirectory(directoryPath) {
-    try {
-        await fs.emptyDir(directoryPath);
-        logger.info(`All files in ${directoryPath} have been successfully deleted.`);
-    } catch (error) {
-        logger.error(`Error deleting files in directory ${directoryPath}:`, error);
-        throw error;
-    }
+async function emptyTheDirectory(directoryPath) {
+  return fs
+    .emptyDir(directoryPath)
+    .then(() =>
+      logger.info(
+        `All files in ${directoryPath} have been successfully deleted.`
+      )
+    )
+    .catch((error) => {
+      logger.error(
+        `Error deleting files in directory ${directoryPath}:`,
+        error
+      );
+      throw error;
+    });
 }
-
 
 /**
  * Checks asynchronously if a directory is not empty.
@@ -134,18 +154,14 @@ export async function emptyTheDirectory(directoryPath) {
  * @returns {Promise<boolean>} A promise that resolves to `true` if the directory is not empty,
  *                             otherwise `false`.
  */
-export async function isDirectoryNotEmpty(directoryPath) {
-    return new Promise((resolve, reject) => {
-        fs.readdir(directoryPath, (err, files) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(files.length > 0);
-            }
-        });
+function isDirectoryNotEmpty(directoryPath) {
+  return new Promise((resolve, reject) => {
+    fs.readdir(directoryPath, (err, files) => {
+      if (err) reject(err);
+      else resolve(files.length > 0);
     });
+  });
 }
-
 
 /**
  * Determines the field mapping for a file based on its filename and a configuration object.
@@ -161,13 +177,13 @@ export async function isDirectoryNotEmpty(directoryPath) {
  * @returns {Object|null} The field mapping if a match is found; otherwise, null.
  */
 function determineFieldMapping(filename, config) {
-    const parts = filename.split('_');
-    for (const [key, value] of Object.entries(config.FILE_FIELD_MAP)) {
-        if (parts[value.spacing] === key) {
-            return value.fields;
-        }
+  const parts = filename.split('_');
+  for (const [key, value] of Object.entries(config.FILE_FIELD_MAP)) {
+    if (parts[value.spacing] === key) {
+      return value.fields;
     }
-    return null; // No matching configuration found
+  }
+  return null; // No matching configuration found
 }
 
 /**
@@ -182,18 +198,20 @@ function determineFieldMapping(filename, config) {
  * @returns {Object} The constructed data object populated with values from contentColumn.
  */
 function constructDataObject(fields, contentColumn) {
-    let dataObject = {};
-    fields.forEach(field => {
-        if (field in contentColumn) {
-            let value = contentColumn[field];
-            if (field === "duration" || field === "count") {
-                // Convert duration to float and count to int with fallbacks
-                value = field === "duration" ? parseFloat(value) || 0 : parseInt(value) || 0;
-            }
-            dataObject[field] = value;
-        }
-    });
-    return dataObject;
+  let dataObject = {};
+  fields.forEach((field) => {
+    if (field in contentColumn) {
+      let value = contentColumn[field];
+      if (field === 'duration' || field === 'count') {
+        // Convert duration to float and count to int with fallbacks
+        value =
+          field === 'duration' ? parseFloat(value) || 0 : parseInt(value) || 0;
+      }
+      dataObject[field] = value;
+    }
+  });
+
+  return dataObject;
 }
 
 /**
@@ -209,13 +227,13 @@ function constructDataObject(fields, contentColumn) {
  * @returns {null | string[]} Returns null if all required fields are present, otherwise returns an array of error messages.
  */
 function validateData(dataObject, requiredFields) {
-    const errors = [];
-    requiredFields.forEach(field => {
-        if (!(field in dataObject)) {
-            errors.push(`Missing required field: ${field}`);
-        }
-    });
-    return errors.length > 0 ? errors : null;
+  const errors = [];
+  requiredFields.forEach((field) => {
+    if (!(field in dataObject)) {
+      errors.push(`Missing required field: ${field}`);
+    }
+  });
+  return errors.length > 0 ? errors : null;
 }
 
 /**
@@ -229,11 +247,10 @@ function validateData(dataObject, requiredFields) {
  * @param {string} directoryPath - The target directory path where the error file should be relocated.
  */
 function queueErrorFile(errorQueue, filePath, directoryPath) {
-    const fileName = path.basename(filePath);
-    const targetPath = path.join(directoryPath, fileName);
-    errorQueue.push({sourcePath: filePath, targetPath});
+  const fileName = path.basename(filePath);
+  const targetPath = path.join(directoryPath, fileName);
+  errorQueue.push({ sourcePath: filePath, targetPath });
 }
-
 
 /**
  * Processes files within a specified directory according to configuration settings.
@@ -255,106 +272,152 @@ function queueErrorFile(errorQueue, filePath, directoryPath) {
  *                          Logs various statuses and errors throughout the process.
  */
 
-export async function processFiles(config) {
-    try {
-        const {BATCH_SIZE, miscErrorDirectory, dbInsertionErrorDirectory, sourceZipDirectory, fieldConfigErrorDirectory} = config;
+async function processFiles(config) {
+  try {
+    const {
+      BATCH_SIZE,
+      miscErrorDirectory,
+      dbInsertionErrorDirectory,
+      sourceZipDirectory,
+      fieldConfigErrorDirectory,
+    } = config;
 
-        // Configuration for error handling
-        const errorQueue = async.queue(async (task, callback) => {
-            try {
-                await fs.move(task.sourcePath, task.targetPath);
-                logger.info(`Successfully moved erroneous file to: ${task.targetPath}`);
-            } catch (error) {
-                logger.error(`Failed to move erroneous file: ${task.sourcePath} to ${task.targetPath}. Error: ${error.message}`);
-            } finally {
-                callback();
-            }
-        }, BATCH_SIZE); // Limited concurrency for error processing
+    // Configuration for error handling
+    const errorQueue = async.queue(async (task, callback) => {
+      try {
+        await fs.move(task.sourcePath, task.targetPath);
+        logger.info(`Successfully moved erroneous file to: ${task.targetPath}`);
+      } catch (error) {
+        logger.error(
+          `Failed to move erroneous file: ${task.sourcePath} to ${task.targetPath}. Error: ${error.message}`
+        );
+      } finally {
+        callback();
+      }
+    }, BATCH_SIZE); // Limited concurrency for error processing
 
+    const files = await fs.promises.readdir(sourceZipDirectory);
 
-        const files = await fs.promises.readdir(sourceZipDirectory);
-
-        if (!files.length) {
-            logger.info('No files found to process. Exiting.');
-            return;  // Exit early if no files to process
-        }
-
-
-        const tasks = files.map(file => {
-            return async () => { // Make sure to return a function for async.parallelLimit
-                const filePath = path.join(sourceZipDirectory, file);
-                const matchedMappedFields = determineFieldMapping(file, config);
-
-                if (!matchedMappedFields) {
-                    logger.warn(`No field configuration found for file: ${file}. Skipping file.`);
-                    queueErrorFile(errorQueue, filePath, fieldConfigErrorDirectory);
-                    return; // Skip processing this file
-                }
-
-                const parser = fs.createReadStream(filePath)
-                    .pipe(parse({
-                        columns: matchedMappedFields,
-                        trim: true,
-                        skip_empty_lines: false
-                    }));
-
-                parser.on('error', error => {
-                    logger.error(`Parsing error in file ${file}: ${error.message}. Terminating parser.`);
-                    queueErrorFile(errorQueue, filePath, miscErrorDirectory);
-                    parser.destroy();
-                });
-
-                try {
-                    for await (const contentColumn of parser) {
-                        logger.debug(`Processing row in file ${file}: ${JSON.stringify(contentColumn)}`);
-                        let dataObject;
-                        try {
-                            // Attempt to dynamically construct a data object from the content column
-                            dataObject = constructDataObject(matchedMappedFields, contentColumn);
-                        } catch (error) {
-                            // Log the error if constructing the data object fails
-                            logger.error(`Error constructing data object for file ${file}: ${error.message}`);
-                            queueErrorFile(errorQueue, filePath, miscErrorDirectory);
-                            continue; // Skip this record and continue with the next one
-                        }
-
-                        // Validate the constructed data object
-                        const errors = validateData(dataObject, matchedMappedFields);
-                        if (errors) {
-                            // Log validation errors and queue the file for error processing
-                            logger.warn(`Validation errors in file ${file}: ${errors.join(', ')}. Skipping row.`);
-                            queueErrorFile(errorQueue, filePath, miscErrorDirectory);
-                            continue; // Skip this record and continue with the next one
-                        }
-
-                        // Attempt to insert the validated data into the database
-                        try {
-                            await prisma.detection.create({data: dataObject});
-                            logger.info(`Successfully inserted data for file ${file}.`);
-                        } catch (error) {
-                            logger.error(`Database insertion error for file ${file}: ${error.message}. Data: ${JSON.stringify(dataObject)}`);
-                            queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
-                        }
-                    }
-                    logger.info(`Completed processing the file: ${file}`);
-                } catch (error) {
-                    logger.error(`Unhandled error during the processing of file ${file}: ${error.message}`);
-                }
-            };
-        });
-        // Execute all tasks with controlled concurrency
-        await async.parallelLimit(tasks, BATCH_SIZE);
-        logger.info(`Initial processing complete. Queue Length: ${errorQueue.length()}, Running Tasks: ${errorQueue.running()}`);
-        // Check if there are remaining or currently processed tasks
-        if (errorQueue.length() + errorQueue.running() > 0) {
-            await new Promise(resolve => errorQueue.drain(resolve));
-            logger.info('All error handling tasks completed. Error queue drained.');
-        } else {
-            logger.info('No errors encountered during file process, skipping error queue draining.');
-        }
-
-
-    } catch (error) {
-        logger.error(`Critical error in processFiles: ${error.message}`);
+    if (!files.length) {
+      logger.info('No files found to process. Exiting.');
+      return; // Exit early if no files to process
     }
+
+    const tasks = files.map((file) => {
+      return async () => {
+        // Make sure to return a function for async.parallelLimit
+        const filePath = path.join(sourceZipDirectory, file);
+        const matchedMappedFields = determineFieldMapping(file, config);
+
+        if (!matchedMappedFields) {
+          logger.warn(
+            `No field configuration found for file: ${file}. Skipping file.`
+          );
+          queueErrorFile(errorQueue, filePath, fieldConfigErrorDirectory);
+          return; // Skip processing this file
+        }
+
+        const parser = fs.createReadStream(filePath).pipe(
+          parse({
+            columns: matchedMappedFields,
+            trim: true,
+            skip_empty_lines: false,
+          })
+        );
+
+        parser.on('error', (error) => {
+          logger.error(
+            `Parsing error in file ${file}: ${error.message}. Terminating parser.`
+          );
+          queueErrorFile(errorQueue, filePath, miscErrorDirectory);
+          parser.destroy();
+        });
+
+        try {
+          for await (const contentColumn of parser) {
+            logger.debug(
+              `Processing row in file ${file}: ${JSON.stringify(contentColumn)}`
+            );
+            let dataObject;
+            try {
+              // Attempt to dynamically construct a data object from the content column
+              dataObject = constructDataObject(
+                matchedMappedFields,
+                contentColumn
+              );
+
+              // Extracts the filename from the filePath
+              dataObject['file_name'] = path.basename(filePath);
+
+            } catch (error) {
+              // Log the error if constructing the data object fails
+              logger.error(
+                `Error constructing data object for file ${file}: ${error.message}`
+              );
+              queueErrorFile(errorQueue, filePath, miscErrorDirectory);
+              continue; // Skip this record and continue with the next one
+            }
+
+            // Validate the constructed data object
+            const errors = validateData(dataObject, matchedMappedFields);
+            if (errors) {
+              // Log validation errors and queue the file for error processing
+              logger.warn(
+                `Validation errors in file ${file}: ${errors.join(
+                  ', '
+                )}. Skipping row.`
+              );
+              queueErrorFile(errorQueue, filePath, miscErrorDirectory);
+              continue; // Skip this record and continue with the next one
+            }
+
+            // Attempt to insert the validated data into the database
+            try {
+              await prisma.detection.create({ data: dataObject });
+              logger.info(`Successfully inserted data for file ${file}.`);
+            } catch (error) {
+              logger.error(
+                `Database insertion error for file ${file}: ${
+                  error.message
+                }. Data: ${JSON.stringify(dataObject)}`
+              );
+              queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
+            }
+          }
+          logger.info(`Completed processing the file: ${file}`);
+        } catch (error) {
+          logger.error(
+            `Unhandled error during the processing of file ${file}: ${error.message}`
+          );
+        }
+      };
+    });
+    // Execute all tasks with controlled concurrency
+    await async.parallelLimit(tasks, BATCH_SIZE);
+    logger.info(
+      `Initial processing complete. Queue Length: ${errorQueue.length()}, Running Tasks: ${errorQueue.running()}`
+    );
+    // Check if there are remaining or currently processed tasks
+    if (errorQueue.length() + errorQueue.running() > 0) {
+      await new Promise((resolve) => errorQueue.drain(resolve));
+      logger.info('All error handling tasks completed. Error queue drained.');
+    } else {
+      logger.info(
+        'No errors encountered during file process, skipping error queue draining.'
+      );
+    }
+  } catch (error) {
+    logger.error(`Critical error in processFiles: ${error.message}`);
+  }
 }
+
+module.exports = {
+  ensureDirectoryExists,
+  moveZipFile,
+  prepareEnvironment,
+  validateSchedulingConfig,
+  emptyTheDirectory,
+  isDirectoryNotEmpty,
+  processFiles,
+  testPrismaConnection
+};

@@ -3,29 +3,39 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "bin": "index.js",
-  "type": "module",
+  "bin": {
+    "backup-service": "./index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
     "generate:schema": "node generateModel.js",
-    "step:2": "npx prisma migrate dev --name init",
-    "reset:schema": "npx prisma migrate reset",
     "update:schema": "npx prisma migrate dev",
+    "reset:schema": "npx prisma migrate reset",
     "studio": "npx prisma studio",
-    "build": "pkg . --targets node16-win-x64 --output ./build/backup-service.exe"
+    "build": "pkg . --targets node16-win-x64 --output ./build/backup-service.exe --no-bytecode",
+    "audit": "npm audit"
   },
   "pkg": {
     "targets": [
       "node16-win-x64"
     ],
     "assets": [
-      "node_modules/@prisma/client/**/*",
-      "node_modules/.prisma/client/*"
+      "config.yaml",
+      "node_modules/@prisma/engines/*",
+      "node_modules/.prisma/client/*",
+      "prisma/schema.prisma",
+      "prisma/migrations/*",
+      "db/*.db"
     ],
     "outputPath": "build"
   },
-  "keywords": [],
+  "keywords": [
+    "backup",
+    "file-management",
+    "nodejs",
+    "prisma"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -39,6 +49,7 @@
     "express": "^4.19.2",
     "fs-extra": "^11.2.0",
     "js-yaml": "^4.1.0",
+    "minimatch": "^9.0.4",
     "morgan": "^1.10.0",
     "node-schedule": "^2.1.1",
     "nodemon": "^3.1.0",
@@ -48,5 +59,6 @@
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.22.4"
-  }
+  },
+  "devDependencies": {}
 }
