@@ -33,9 +33,9 @@ PATH_CONFIG:
   runProcessFiles: true
 
   # Set either dailyAt or everyXHours or everyXMinutes.
-  dailyAt: 13.11 # Example: Run daily at 13:16.
+  dailyAt: null # Example: Run daily at 13:16.
   everyXHours: null # Example: Run every 3 hours.
-  everyXMinutes: null # Example: Run every 15 minutes
+  everyXMinutes: 1 # Example: Run every 15 minutes
   BATCH_SIZE: 100
 
   # runProcessFiles must be set to true to run the following tasks

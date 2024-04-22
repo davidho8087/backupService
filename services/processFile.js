@@ -4,8 +4,7 @@ const path = require("path");
 const prisma = require("../lib/prismaClient");
 const logger = require("../lib/logger");
 const { parse } = require("csv-parse");
-const {parseISO} = require("date-fns");
-const {isValid} = require("zod");
+const {parseISO, isValid} = require("date-fns");
 
 /**
  * Determines the field mapping for a file based on its filename and a configuration object.
