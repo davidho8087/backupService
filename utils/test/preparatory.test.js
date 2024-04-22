@@ -1,7 +1,6 @@
 const fs = require('fs-extra');
 const logger = require('../../lib/logger');
-const prisma = require("../../lib/prismaClient");
-const { ensureDirectoryExists, prepareDirectory, testPrismaConnection} = require('../preparatory');
+const { ensureDirectoryExists} = require('../preparatory');
 
 
 

@@ -2,7 +2,6 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const { z } = require('zod');
 const path = require("path");
-const logger = require('./lib/logger.js');
 
 // Validates time in "HH:mm" format.
 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
