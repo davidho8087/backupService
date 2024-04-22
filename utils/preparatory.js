@@ -1,4 +1,4 @@
-const fs = require('fs-extra');
+const fs = require("fs-extra");
 const prisma = require("../lib/prismaClient");
 const logger = require("../lib/logger");
 /**
@@ -12,17 +12,18 @@ const logger = require("../lib/logger");
  * @throws {Error} Throws an error if the Prisma client cannot retrieve data from the database.
  */
 async function testPrismaConnection() {
-	try {
-		const detections = await prisma.detection.findMany({
-			take: 1 // Limits the query to 5 items for testing
-		});
-		logger.info(`Prisma connection test passed. Found ${detections.length} detections limit with 1 record.`);
-	} catch (error) {
-		logger.error('Prisma connection test failed', { error });
-		throw error; // Rethrow to handle the error outside
-	}
+  try {
+    const detections = await prisma.detection.findMany({
+      take: 1, // Limits the query to 5 items for testing
+    });
+    logger.info(
+      `Prisma connection test passed. Found ${detections.length} detections limit with 1 record.`
+    );
+  } catch (error) {
+    logger.error("Prisma connection test failed", { error });
+    throw error; // Rethrow to handle the error outside
+  }
 }
-
 
 /**
  * Ensures that the specified directory exists. If the directory does not exist,
@@ -34,21 +35,21 @@ async function testPrismaConnection() {
  * @returns {Promise<void>} A promise that resolves when the operation is complete.
  */
 async function ensureDirectoryExists(directoryPath) {
-	return fs
-		.pathExists(directoryPath)
-		.then((exists) => {
-			if (!exists) {
-				return fs
-					.ensureDir(directoryPath)
-					.then(() => logger.info(`Directory created: ${directoryPath}`));
-			} else {
-				logger.info(`Verify Directory: ${directoryPath}, CHECKED!`);
-			}
-		})
-		.catch((error) => {
-			logger.error(`Error ensuring directory exists: ${directoryPath}`, error);
-			throw error;
-		});
+  return fs
+    .pathExists(directoryPath)
+    .then((exists) => {
+      if (!exists) {
+        return fs
+          .ensureDir(directoryPath)
+          .then(() => logger.info(`Directory created: ${directoryPath}`));
+      } else {
+        logger.info(`Verify Directory: ${directoryPath}, CHECKED!`);
+      }
+    })
+    .catch((error) => {
+      logger.error(`Error ensuring directory exists: ${directoryPath}`, error);
+      throw error;
+    });
 }
 
 /**
@@ -66,27 +67,28 @@ async function ensureDirectoryExists(directoryPath) {
  * @throws {Error} - Throws an error if there is an issue creating the directories.
  */
 async function prepareDirectory(configPath) {
-	const {
-		sourceZipDirectory,
-		destinationZipDirectory,
-		miscErrorDirectory,
-		dbInsertionErrorDirectory,
-		fieldConfigErrorDirectory,
-	} = configPath;
-	return Promise.all([
-		ensureDirectoryExists(sourceZipDirectory),
-		ensureDirectoryExists(destinationZipDirectory),
-		ensureDirectoryExists(miscErrorDirectory),
-		ensureDirectoryExists(dbInsertionErrorDirectory),
-		ensureDirectoryExists(fieldConfigErrorDirectory),
-	]).catch((error) => {
-		logger.error('Error preparing the environment:', error);
-		throw error;
-	});
+  const {
+    sourceZipDirectory,
+    destinationZipDirectory,
+    miscErrorDirectory,
+    dbInsertionErrorDirectory,
+    fieldConfigErrorDirectory,
+  } = configPath;
+
+  return Promise.all([
+    ensureDirectoryExists(sourceZipDirectory),
+    ensureDirectoryExists(destinationZipDirectory),
+    ensureDirectoryExists(miscErrorDirectory),
+    ensureDirectoryExists(dbInsertionErrorDirectory),
+    ensureDirectoryExists(fieldConfigErrorDirectory),
+  ]).catch((error) => {
+    logger.error("Error preparing the environment:", error);
+    throw error;
+  });
 }
 
 module.exports = {
-	testPrismaConnection,
-	ensureDirectoryExists,
-	prepareDirectory,
+  testPrismaConnection,
+  ensureDirectoryExists,
+  prepareDirectory,
 };

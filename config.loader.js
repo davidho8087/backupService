@@ -24,8 +24,8 @@ const PathConfigSchema = z.object({
 
 	winstonLogDirectory: z.string(),
 	runProcessFiles: z.boolean().default(false),
-	runZipAndMove: z.boolean().default(false),
-	runEmptyTheDirectory: z.boolean().default(false),
+	// runZipAndMove: z.boolean().default(false),
+	// runEmptyTheDirectory: z.boolean().default(false),
 
 	BATCH_SIZE: z.number().default(100),
 

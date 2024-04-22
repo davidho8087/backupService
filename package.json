@@ -12,9 +12,10 @@
     "update:schema": "npx prisma migrate dev",
     "reset:schema": "npx prisma migrate reset",
     "studio": "npx prisma studio",
-    "build": "pkg . --targets node16-win-x64 --output ./build/backup-service.exe --no-bytecode",
+    "build": "pkg . --targets node16-win-x64 --output ./build/cleanup-service.exe --no-bytecode",
     "audit": "npm audit",
-    "test": "jest"
+    "test": "jest",
+    "clean:jest": "jest --clearCache"
   },
   "pkg": {
     "targets": [

@@ -10,22 +10,22 @@ const logger = require("../lib/logger");
  * @throws {Error} - Throws an error if there is an issue emptying the directory.
  */
 async function emptyTheDirectory(directoryPath) {
-	return fs
-		.emptyDir(directoryPath)
-		.then(() =>
-			logger.info(
-				`All files in ${directoryPath} have been successfully deleted.`
-			)
-		)
-		.catch((error) => {
-			logger.error(
-				`Error deleting files in directory ${directoryPath}:`,
-				error
-			);
-			throw error;
-		});
+  return fs
+    .emptyDir(directoryPath)
+    .then(() =>
+      logger.info(
+        `All files in ${directoryPath} have been successfully deleted.`
+      )
+    )
+    .catch((error) => {
+      logger.error(
+        `Error deleting files in directory ${directoryPath}:`,
+        error
+      );
+      throw error;
+    });
 }
 
 module.exports = {
-	emptyTheDirectory,
+  emptyTheDirectory,
 };

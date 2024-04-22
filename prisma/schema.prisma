@@ -13,21 +13,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+
 model Detection {
-  id           Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
   detection_id String
-  tracker_id   String
-  store_code   String
-  event_type   String
-  event_name   String
-  duration     Float    @default(0)
-  count        Int      @default(0)
-  class_type   String
-  message      String
-  date_time    DateTime
-  camera_name  String
-  region       String
-  region_id    String
-  zone_name    String
-  file_name    String?
+  tracker_id String
+  store_code String
+  event_type String
+  event_name String
+  duration Float @default(0)
+  count Int @default(0)
+  class_type String
+  message String
+  date_time DateTime
+  camera_name String
+  region String
+  region_id String
+  zone_name String
+  file_name String?
 }

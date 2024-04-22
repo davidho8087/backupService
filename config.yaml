@@ -7,7 +7,6 @@ PORT: 5501
 NODE_ENV: dev
 HOST: localhost
 
-
 #EXECUTION_TASKS:
 #  runProcessFiles: true
 #  tasks:
@@ -16,49 +15,41 @@ HOST: localhost
 #    - moveToArchive
 #  runZipAndMove: true
 #  runEmptyTheDirectory: true
-  # Or alternatively for another valid configuration:
-  # - saveToDatabase
-  # - moveToArchive
-  # - runZipAndMove
-
+# Or alternatively for another valid configuration:
+# - saveToDatabase
+# - moveToArchive
+# - runZipAndMove
 
 # PATH_CONFIG section
 PATH_CONFIG:
   isEnabled: true # Set to true to enable the application operations
-  sourceZipDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\backup
-  destinationZipDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\zippedArchive
-  miscErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\miscError
-  dbInsertionErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\dbInsertionError
-  fieldConfigErrorDirectory: C:\projects\hendricks\experiment\event-traffic-mock-data\fieldConfigError
-  winstonLogDirectory: ../logs/backup-service
-#  appendToFile: D:\davidho\tools\event-traffic-mock-data\appendToFile
-
-  # Option to execute the following tasks
+  sourceZipDirectory: D:\davidho\tools\event-traffic-mock-data\backup
+  destinationZipDirectory: D:\davidho\tools\event-traffic-mock-data\zippedArchive
+  miscErrorDirectory: D:\davidho\tools\event-traffic-mock-data\miscError
+  dbInsertionErrorDirectory: D:\davidho\tools\event-traffic-mock-data\dbInsertionError
+  fieldConfigErrorDirectory: D:\davidho\tools\event-traffic-mock-data\fieldConfigError
+  winstonLogDirectory: ../logs/backup-service-log
+  # appendToFile: D:\davidho\tools\event-traffic-mock-data\appendToFile
   runProcessFiles: true
-  runZipAndMove: true
-  runEmptyTheDirectory: true
-#  runZipAndMove: true
-#  runEmptyTheDirectory: true
 
   # Set either dailyAt or everyXHours or everyXMinutes.
-  dailyAt: null  # Example: Run daily at 13:16.
+  dailyAt: 13.11 # Example: Run daily at 13:16.
   everyXHours: null # Example: Run every 3 hours.
-  everyXMinutes: 1  # Example: Run every 15 minutes
-  BATCH_SIZE: 10
+  everyXMinutes: null # Example: Run every 15 minutes
+  BATCH_SIZE: 100
 
   # runProcessFiles must be set to true to run the following tasks
   # FILE_FIELD_MAP
   FILE_FIELD_MAP:
     capacity:
-      spacing: 4
-      validate: 12
+      spacing: 3
       fields:
         - date_time
         - store_code
         - detection_id
         - tracker_id
-        - event_type
         - event_name
+        - event_type
         - region
         - class_type
         - camera_name
@@ -68,14 +59,29 @@ PATH_CONFIG:
         - zone_name
     dwell:
       spacing: 3
-      validate: 12
       fields:
         - date_time
         - store_code
         - detection_id
         - tracker_id
-        - event_name
         - event_type
+        - event_name
+        - duration
+        - class_type
+        - camera_name
+        - region
+        - message
+        - region_id
+        - zone_name
+    visit:
+      spacing: 3
+      fields:
+        - date_time
+        - store_code
+        - detection_id
+        - tracker_id
+        - event_type
+        - event_name
         - duration
         - class_type
         - camera_name

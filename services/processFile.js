@@ -4,6 +4,8 @@ const path = require("path");
 const prisma = require("../lib/prismaClient");
 const logger = require("../lib/logger");
 const { parse } = require("csv-parse");
+const {parseISO} = require("date-fns");
+const {isValid} = require("zod");
 
 /**
  * Determines the field mapping for a file based on its filename and a configuration object.
@@ -19,15 +21,14 @@ const { parse } = require("csv-parse");
  * @returns {Object|null} The field mapping if a match is found; otherwise, null.
  */
 function determineFieldMapping(filename, config) {
-	const parts = filename.split('_');
-	for (const [key, value] of Object.entries(config.FILE_FIELD_MAP)) {
-		if (parts[value.spacing] === key) {
-			return value.fields;
-		}
-	}
-	return null; // No matching configuration found
+  const parts = filename.split("_");
+  for (const [key, value] of Object.entries(config.FILE_FIELD_MAP)) {
+    if (parts[value.spacing] === key) {
+      return value.fields;
+    }
+  }
+  return null; // No matching configuration found
 }
-
 
 /**
  * Constructs a data object from specified fields and a content column.
@@ -41,22 +42,33 @@ function determineFieldMapping(filename, config) {
  * @returns {Object} The constructed data object populated with values from contentColumn.
  */
 function constructDataObject(fields, contentColumn) {
-	let dataObject = {};
-	fields.forEach((field) => {
-		if (field in contentColumn) {
-			let value = contentColumn[field];
-			if (field === 'duration' || field === 'count') {
-				// Convert duration to float and count to int with fallbacks
-				value =
-					field === 'duration' ? parseFloat(value) || 0 : parseInt(value) || 0;
-			}
-			dataObject[field] = value;
-		}
-	});
+  let dataObject = {};
+  fields.forEach((field) => {
 
-	return dataObject;
+    let value = contentColumn[field];
+    if (field in contentColumn) {
+      if (field === 'date_time') {
+        // Special handling for date_time to ensure it is a valid ISO date
+        const date = parseISO(value);
+        if (isValid(date)) {
+          // If the date is valid, convert it to an ISO string
+          dataObject[field] = date.toISOString();
+        } else {
+          // If the date is invalid, log and queue the file for error handling
+          logger.warn(`Invalid date format for ${field}: ${value}`);
+          throw new Error(`Invalid date format for field ${field}`);
+        }
+      } else if (field === 'duration' || field === 'count') {
+        // Convert duration to float and count to int with fallbacks
+        dataObject[field] = field === 'duration' ? parseFloat(value) || 0 : parseInt(value) || 0;
+      } else {
+        dataObject[field] = value;
+      }
+    }
+  });
+
+  return dataObject;
 }
-
 
 /**
  * Validates if the specified fields exist in the data object.
@@ -71,13 +83,13 @@ function constructDataObject(fields, contentColumn) {
  * @returns {null | string[]} Returns null if all required fields are present, otherwise returns an array of error messages.
  */
 function validateData(dataObject, requiredFields) {
-	const errors = [];
-	requiredFields.forEach((field) => {
-		if (!(field in dataObject)) {
-			errors.push(`Missing required field: ${field}`);
-		}
-	});
-	return errors.length > 0 ? errors : null;
+  const errors = [];
+  requiredFields.forEach((field) => {
+    if (!(field in dataObject)) {
+      errors.push(`Missing required field: ${field}`);
+    }
+  });
+  return errors.length > 0 ? errors : null;
 }
 
 /**
@@ -91,11 +103,10 @@ function validateData(dataObject, requiredFields) {
  * @param {string} directoryPath - The target directory path where the error file should be relocated.
  */
 function queueErrorFile(errorQueue, filePath, directoryPath) {
-	const fileName = path.basename(filePath);
-	const targetPath = path.join(directoryPath, fileName);
-	errorQueue.push({ sourcePath: filePath, targetPath });
+  const fileName = path.basename(filePath);
+  const targetPath = path.join(directoryPath, fileName);
+  errorQueue.push({ sourcePath: filePath, targetPath });
 }
-
 
 /**
  * Processes files within a specified directory according to configuration settings.
@@ -118,144 +129,143 @@ function queueErrorFile(errorQueue, filePath, directoryPath) {
  */
 
 async function processFiles(config) {
-	try {
-		const {
-			BATCH_SIZE,
-			miscErrorDirectory,
-			dbInsertionErrorDirectory,
-			sourceZipDirectory,
-			fieldConfigErrorDirectory,
-		} = config;
+  try {
+    const {
+      BATCH_SIZE,
+      miscErrorDirectory,
+      dbInsertionErrorDirectory,
+      sourceZipDirectory,
+      fieldConfigErrorDirectory,
+    } = config;
 
-		// Configuration for error handling
-		const errorQueue = async.queue(async (task, callback) => {
-			try {
-				await fs.move(task.sourcePath, task.targetPath);
-				logger.info(`Successfully moved erroneous file to: ${task.targetPath}`);
-			} catch (error) {
-				logger.error(
-					`Failed to move erroneous file: ${task.sourcePath} to ${task.targetPath}. Error: ${error.message}`
-				);
-			} finally {
-				callback();
-			}
-		}, BATCH_SIZE); // Limited concurrency for error processing
+    // Configuration for error handling
+    const errorQueue = async.queue(async (task, callback) => {
+      try {
+        await fs.move(task.sourcePath, task.targetPath);
+        logger.info(`Successfully moved erroneous file to: ${task.targetPath}`);
+      } catch (error) {
+        logger.error(
+          `Failed to move erroneous file: ${task.sourcePath} to ${task.targetPath}. Error: ${error.message}`
+        );
+      } finally {
+        callback();
+      }
+    }, BATCH_SIZE); // Limited concurrency for error processing
 
-		const files = await fs.promises.readdir(sourceZipDirectory);
+    const files = await fs.promises.readdir(sourceZipDirectory);
 
-		if (!files.length) {
-			logger.info('No files found to process. Exiting.');
-			return; // Exit early if no files to process
-		}
+    if (!files.length) {
+      logger.info("No files found to process. Exiting.");
+      return; // Exit early if no files to process
+    }
 
-		const tasks = files.map((file) => {
-			return async () => {
-				// Make sure to return a function for async.parallelLimit
-				const filePath = path.join(sourceZipDirectory, file);
-				const matchedMappedFields = determineFieldMapping(file, config);
+    const tasks = files.map((file) => {
+      return async () => {
+        // Make sure to return a function for async.parallelLimit
+        const filePath = path.join(sourceZipDirectory, file);
+        const matchedMappedFields = determineFieldMapping(file, config);
 
-				if (!matchedMappedFields) {
-					logger.warn(
-						`No field configuration found for file: ${file}. Skipping file.`
-					);
-					queueErrorFile(errorQueue, filePath, fieldConfigErrorDirectory);
-					return; // Skip processing this file
-				}
+        if (!matchedMappedFields) {
+          logger.warn(
+            `No field configuration found for file: ${file}. Skipping file.`
+          );
+          queueErrorFile(errorQueue, filePath, fieldConfigErrorDirectory);
+          return; // Skip processing this file
+        }
 
-				const parser = fs.createReadStream(filePath).pipe(
-					parse({
-						columns: matchedMappedFields,
-						trim: true,
-						skip_empty_lines: false,
-					})
-				);
+        const parser = fs.createReadStream(filePath).pipe(
+          parse({
+            columns: matchedMappedFields,
+            trim: true,
+            skip_empty_lines: false,
+          })
+        );
 
-				parser.on('error', (error) => {
-					logger.error(
-						`Parsing error in file ${file}: ${error.message}. Terminating parser.`
-					);
-					queueErrorFile(errorQueue, filePath, miscErrorDirectory);
-					parser.destroy();
-				});
+        parser.on("error", (error) => {
+          logger.error(
+            `Parsing error in file ${file}: ${error.message}. Terminating parser.`
+          );
+          queueErrorFile(errorQueue, filePath, miscErrorDirectory);
+          parser.destroy();
+        });
 
-				try {
-					for await (const contentColumn of parser) {
-						logger.debug(
-							`Processing row in file ${file}: ${JSON.stringify(contentColumn)}`
-						);
-						let dataObject;
-						try {
-							// Attempt to dynamically construct a data object from the content column
-							dataObject = constructDataObject(
-								matchedMappedFields,
-								contentColumn
-							);
+        try {
+          for await (const contentColumn of parser) {
+            logger.debug(
+              `Processing row in file ${file}: ${JSON.stringify(contentColumn)}`
+            );
+            let dataObject;
+            try {
+              // Attempt to dynamically construct a data object from the content column
+              dataObject = constructDataObject(
+                matchedMappedFields,
+                contentColumn
+              );
 
-							// Extracts the filename from the filePath
-							dataObject['file_name'] = path.basename(filePath);
+              // Extracts the filename from the filePath
+              dataObject["file_name"] = path.basename(filePath);
+            } catch (error) {
+              // Log the error if constructing the data object fails
+              logger.error(
+                `Error constructing data object for file ${file}: ${error.message}`
+              );
+              queueErrorFile(errorQueue, filePath, miscErrorDirectory);
+              continue; // Skip this record and continue with the next one
+            }
 
-						} catch (error) {
-							// Log the error if constructing the data object fails
-							logger.error(
-								`Error constructing data object for file ${file}: ${error.message}`
-							);
-							queueErrorFile(errorQueue, filePath, miscErrorDirectory);
-							continue; // Skip this record and continue with the next one
-						}
+            // Validate the constructed data object
+            const errors = validateData(dataObject, matchedMappedFields);
+            if (errors) {
+              // Log validation errors and queue the file for error processing
+              logger.warn(
+                `Validation errors in file ${file}: ${errors.join(
+                  ", "
+                )}. Skipping row.`
+              );
+              queueErrorFile(errorQueue, filePath, miscErrorDirectory);
+              continue; // Skip this record and continue with the next one
+            }
 
-						// Validate the constructed data object
-						const errors = validateData(dataObject, matchedMappedFields);
-						if (errors) {
-							// Log validation errors and queue the file for error processing
-							logger.warn(
-								`Validation errors in file ${file}: ${errors.join(
-									', '
-								)}. Skipping row.`
-							);
-							queueErrorFile(errorQueue, filePath, miscErrorDirectory);
-							continue; // Skip this record and continue with the next one
-						}
-
-						// Attempt to insert the validated data into the database
-						try {
-							await prisma.detection.create({ data: dataObject });
-							logger.info(`Successfully inserted data for file ${file}.`);
-						} catch (error) {
-							logger.error(
-								`Database insertion error for file ${file}: ${
-									error.message
-								}. Data: ${JSON.stringify(dataObject)}`
-							);
-							queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
-						}
-					}
-					logger.info(`Completed processing the file: ${file}`);
-				} catch (error) {
-					logger.error(
-						`Unhandled error during the processing of file ${file}: ${error.message}`
-					);
-				}
-			};
-		});
-		// Execute all tasks with controlled concurrency
-		await async.parallelLimit(tasks, BATCH_SIZE);
-		logger.info(
-			`Initial processing complete. Queue Length: ${errorQueue.length()}, Running Tasks: ${errorQueue.running()}`
-		);
-		// Check if there are remaining or currently processed tasks
-		if (errorQueue.length() + errorQueue.running() > 0) {
-			await new Promise((resolve) => errorQueue.drain(resolve));
-			logger.info('All error handling tasks completed. Error queue drained.');
-		} else {
-			logger.info(
-				'No errors encountered during file process, skipping error queue draining.'
-			);
-		}
-	} catch (error) {
-		logger.error(`Critical error in processFiles: ${error.message}`);
-	}
+            // Attempt to insert the validated data into the database
+            try {
+              await prisma.detection.create({ data: dataObject });
+              logger.info(`Successfully inserted data for file ${file}.`);
+            } catch (error) {
+              logger.error(
+                `Database insertion error for file ${file}: ${
+                  error.message
+                }. Data: ${JSON.stringify(dataObject)}`
+              );
+              queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
+            }
+          }
+          logger.info(`Completed processing the file: ${file}`);
+        } catch (error) {
+          logger.error(
+            `Unhandled error during the processing of file ${file}: ${error.message}`
+          );
+        }
+      };
+    });
+    // Execute all tasks with controlled concurrency
+    await async.parallelLimit(tasks, BATCH_SIZE);
+    logger.info(
+      `Initial processing complete. Queue Length: ${errorQueue.length()}, Running Tasks: ${errorQueue.running()}`
+    );
+    // Check if there are remaining or currently processed tasks
+    if (errorQueue.length() + errorQueue.running() > 0) {
+      await new Promise((resolve) => errorQueue.drain(resolve));
+      logger.info("All error handling tasks completed. Error queue drained.");
+    } else {
+      logger.info(
+        "No errors encountered during file process, skipping error queue draining."
+      );
+    }
+  } catch (error) {
+    logger.error(`Critical error in processFiles: ${error.message}`);
+  }
 }
 
 module.exports = {
-	processFiles,
+  processFiles,
 };
