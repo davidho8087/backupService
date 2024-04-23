@@ -26,9 +26,6 @@ jest.mock("archiver", () => {
   };
   return jest.fn(() => mockArchiver);
 });
-jest.mock("../utils/preparatory", () => ({
-  ensureDirectoryExists: jest.fn(),
-}));
 
 const fs = require("fs-extra");
 const path = require("path");
@@ -38,10 +35,8 @@ const {
   moveZipFile,
   zipTheDirectory,
 } = require("./zipAndMoveDirectory");
-const { ensureDirectoryExists } = require("../utils/preparatory");
 
-// Import the function you are testing
-const { moveZipFile } = require("../path_to/moveZipFile"); // Adjust the import path accordingly
+const { ensureDirectoryExists } = require("../../utils/preparatory");
 
 describe("moveZipFile", () => {
   beforeEach(() => {
