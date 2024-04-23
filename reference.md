@@ -90,3 +90,29 @@
   //     files.forEach(file => queue.push(file));
   // }
 ```
+
+```
+const { PrismaClient } = require("@prisma/client");
+const path = require("path");
+const { getConfig, handleCriticalError } = require("./configHelper");
+
+// Retrieve configuration based on the environment
+const { dbPath } = getConfig();
+
+let prisma;
+const initializePrisma = () => {
+  if (prisma) return prisma;
+
+  try {
+    prisma = new PrismaClient({
+      datasources: { db: { url: `file:${dbPath}` } },
+    });
+    prisma.$connect().catch(handleCriticalError);
+  } catch (error) {
+    handleCriticalError(error);
+  }
+  return prisma;
+};
+
+module.exports = initializePrisma();
+```
