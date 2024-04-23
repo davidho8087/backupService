@@ -34,7 +34,7 @@ const {
   zipAndMoveDirectory,
   moveZipFile,
   zipTheDirectory,
-} = require("./zipAndMoveDirectory");
+} = require("./zipAndMoveDirectory.test");
 
 const { ensureDirectoryExists } = require("../../utils/preparatory");
 
