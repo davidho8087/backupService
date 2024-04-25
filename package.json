@@ -14,8 +14,8 @@
     "studio": "npx prisma studio",
     "build": "pkg . --targets node16-win-x64 --output ./build/cleanup-service.exe --no-bytecode",
     "audit": "npm audit",
-    "test": "jest",
-    "clean:jest": "jest --clearCache"
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "pkg": {
     "targets": [
@@ -62,7 +62,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "jest": "^29.7.0"
+    "vitest": "^1.5.0"
   }
 }

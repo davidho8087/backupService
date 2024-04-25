@@ -1,37 +1,49 @@
-// At the top of your test file
-jest.mock('fs-extra', () => ({
-    emptyDir: jest.fn().mockResolvedValue()
-}));
+const fs = require("fs-extra");
+const { describe, it, expect, beforeEach, afterEach } = require("vitest");
+const { emptyTheDirectory } = require("../emptyTheDirectory");
+const logger = require("../lib/logger");
 
-jest.mock('../../lib/logger', () => ({
-    info: jest.fn(),
-    error: jest.fn(),
-}));
+describe("emptyTheDirectory", () => {
+  const testDirectoryPath = "./test/testDirectory";
 
-const fs = require('fs-extra');
-const logger = require('../../lib/logger');
-const { emptyTheDirectory } = require('../emptyTheDirectory'); // Adjust the path accordingly
+  beforeEach(async () => {
+    await fs.ensureDir(testDirectoryPath);
+    await fs.writeFile(`${testDirectoryPath}/file1.txt`, "Test file 1");
+    await fs.writeFile(`${testDirectoryPath}/file2.txt`, "Test file 2");
+  });
 
-describe('emptyTheDirectory', () => {
-    beforeEach(() => {
-        jest.clearAllMocks(); // Reset all mocks before each test
-        fs.emptyDir.mockResolvedValue(); // Ensure mock is reset with resolved value as default for each test
-    });
+  afterEach(async () => {
+    await fs.remove(testDirectoryPath);
+  });
 
-    it('should successfully empty the directory and log a message', async () => {
-        const directoryPath = '/path/to/directory';
-        await emptyTheDirectory(directoryPath);
-        expect(fs.emptyDir).toHaveBeenCalledWith(directoryPath);
-        expect(logger.info).toHaveBeenCalledWith(`All files in ${directoryPath} have been successfully deleted.`);
-    });
+  it("should empty the directory and log a success message", async () => {
+    const loggerInfoSpy = vi.spyOn(logger, "info");
 
-    it('should log an error and throw when failing to empty the directory', async () => {
-        const error = new Error('Failed to empty directory');
-        fs.emptyDir.mockRejectedValue(error); // Simulate an error
+    await emptyTheDirectory(testDirectoryPath);
 
-        const directoryPath = '/path/to/directory';
-        await expect(emptyTheDirectory(directoryPath)).rejects.toThrow('Failed to empty directory');
-        expect(fs.emptyDir).toHaveBeenCalledWith(directoryPath);
-        expect(logger.error).toHaveBeenCalledWith(`Error deleting files in directory ${directoryPath}:`, error);
-    });
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      `All files in ${testDirectoryPath} have been successfully deleted.`
+    );
+
+    const filesInDirectory = await fs.readdir(testDirectoryPath);
+    expect(filesInDirectory).toHaveLength(0);
+
+    loggerInfoSpy.mockRestore();
+  });
+
+  it("should throw an error and log an error message if emptying the directory fails", async () => {
+    const loggerErrorSpy = vi.spyOn(logger, "error");
+    const nonExistentDirectoryPath = "./test/nonExistentDirectory";
+
+    await expect(
+      emptyTheDirectory(nonExistentDirectoryPath)
+    ).rejects.toThrowError();
+
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      `Error deleting files in directory ${nonExistentDirectoryPath}:`,
+      expect.any(Error)
+    );
+
+    loggerErrorSpy.mockRestore();
+  });
 });
