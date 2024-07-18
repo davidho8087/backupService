@@ -4,7 +4,7 @@ const path = require("path");
 const prisma = require("../lib/prismaClient");
 const logger = require("../lib/logger");
 const { parse } = require("csv-parse");
-const {parseISO, isValid} = require("date-fns");
+const { parseISO, isValid } = require("date-fns");
 
 /**
  * Determines the field mapping for a file based on its filename and a configuration object.
@@ -43,10 +43,9 @@ function determineFieldMapping(filename, config) {
 function constructDataObject(fields, contentColumn) {
   let dataObject = {};
   fields.forEach((field) => {
-
     let value = contentColumn[field];
     if (field in contentColumn) {
-      if (field === 'date_time') {
+      if (field === "date_time") {
         // Special handling for date_time to ensure it is a valid ISO date
         const date = parseISO(value);
         if (isValid(date)) {
@@ -57,9 +56,10 @@ function constructDataObject(fields, contentColumn) {
           logger.warn(`Invalid date format for ${field}: ${value}`);
           throw new Error(`Invalid date format for field ${field}`);
         }
-      } else if (field === 'duration' || field === 'count') {
+      } else if (field === "duration" || field === "count") {
         // Convert duration to float and count to int with fallbacks
-        dataObject[field] = field === 'duration' ? parseFloat(value) || 0 : parseInt(value) || 0;
+        dataObject[field] =
+          field === "duration" ? parseFloat(value) || 0 : parseInt(value) || 0;
       } else {
         dataObject[field] = value;
       }
@@ -226,17 +226,17 @@ async function processFiles(config) {
             }
 
             // Attempt to insert the validated data into the database
-            try {
-              await prisma.detection.create({ data: dataObject });
-              logger.info(`Successfully inserted data for file ${file}.`);
-            } catch (error) {
-              logger.error(
-                `Database insertion error for file ${file}: ${
-                  error.message
-                }. Data: ${JSON.stringify(dataObject)}`
-              );
-              queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
-            }
+            // try {
+            //   await prisma.detection.create({ data: dataObject });
+            //   logger.info(`Successfully inserted data for file ${file}.`);
+            // } catch (error) {
+            //   logger.error(
+            //     `Database insertion error for file ${file}: ${
+            //       error.message
+            //     }. Data: ${JSON.stringify(dataObject)}`
+            //   );
+            //   queueErrorFile(errorQueue, filePath, dbInsertionErrorDirectory);
+            // }
           }
           logger.info(`Completed processing the file: ${file}`);
         } catch (error) {

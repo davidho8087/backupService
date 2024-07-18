@@ -22,7 +22,7 @@ HOST: localhost
 
 # PATH_CONFIG section
 PATH_CONFIG:
-  isEnabled: true # Set to true to enable the application operations
+  isEnabled: false # Set to true to enable the application operations
   sourceZipDirectory: D:\davidho\tools\event-traffic-mock-data\backup
   destinationZipDirectory: D:\davidho\tools\event-traffic-mock-data\zippedArchive
   miscErrorDirectory: D:\davidho\tools\event-traffic-mock-data\miscError

@@ -5,7 +5,10 @@ const app = require("./server.js");
 const { loadYAMLConfig } = require("./config.loader.js");
 const logger = require("./lib/logger.js");
 const { scheduler } = require("./lib/scheduler.js");
-const { prepareDirectory, testPrismaConnection} = require("./utils/preparatory");
+const {
+  prepareDirectory,
+  testPrismaConnection,
+} = require("./utils/preparatory");
 
 // Load YAML config
 const config = loadYAMLConfig();
@@ -26,7 +29,7 @@ const runProcessFiles = config.PATH_CONFIG.runProcessFiles;
       if (runProcessFiles) {
         logger.info("Process files is enabled");
       }
-      await testPrismaConnection();
+      // await testPrismaConnection();
       await prepareDirectory(configPath);
       scheduler(configPath);
     } else {
