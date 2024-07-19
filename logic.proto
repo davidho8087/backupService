@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+service LogicService {
+  rpc TriggerAndAcknowledge (TriggerRequest) returns (TriggerResponse) {}
+}
+
+message TriggerRequest {
+  string message = 1;
+}
+
+message TriggerResponse {
+  string message = 1;
+}
